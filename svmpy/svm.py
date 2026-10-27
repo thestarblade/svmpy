@@ -45,13 +45,18 @@ Simple usage::
 import math
 import random
 
-__all__ = ["SVM", "linear_kernel", "make_rbf_kernel"]
+__all__ = ["SVM", "NotFittedError", "linear_kernel", "make_rbf_kernel"]
+
+
+class NotFittedError(RuntimeError):
+    """Raised when prediction or serialization is attempted before fitting."""
 
 
 class SVM:
     """Binary support vector machine trained with simplified SMO."""
 
     def __init__(self):
+        self._fitted = False
         self.n_samples = 0
         self.n_features = 0
         self.b = 0.0
@@ -63,6 +68,12 @@ class SVM:
         self.kernel_results = None
         self.w = None
         self.rbf_sigma = None
+
+    def _check_fitted(self):
+        if not self._fitted:
+            raise NotFittedError(
+                "SVM is not trained; call train() or from_dict() first"
+            )
 
     def train(self, data, labels, *, C=1.0, tol=1e-4, alphatol=1e-7,
               maxiter=10000, numpasses=10, kernel="linear",
@@ -76,9 +87,23 @@ class SVM:
         A dict of options can still be applied with
         ``svm.train(data, labels, **options)``.
         """
+        if not data:
+            raise ValueError("data must not be empty")
+        if len(data) != len(labels):
+            raise ValueError("data and labels must have the same length")
+        if len(data) < 2:
+            raise ValueError("SMO requires at least two samples")
+        if C <= 0:
+            raise ValueError("C must be positive")
+        if tol < 0 or alphatol < 0:
+            raise ValueError("tol and alphatol must be non-negative")
+        if maxiter < 1 or numpasses < 1:
+            raise ValueError("maxiter and numpasses must be at least 1")
+
         # instantiate kernel. It can be given as a string or as a callable.
         kernel_fn, kernel_type, rbf_sigma = _resolve_kernel(kernel, rbfsigma)
 
+        self._fitted = False
         self.kernel = kernel_fn
         self.kernel_type = kernel_type
         self.rbf_sigma = rbf_sigma
@@ -198,6 +223,7 @@ class SVM:
         # The cache is only needed during training, and it is stale after the
         # support vectors have been filtered.
         self.kernel_results = None
+        self._fitted = True
         return {"iters": iters}
 
     def _margin_one(self, inst):
@@ -211,6 +237,7 @@ class SVM:
 
     def margin_one(self, inst):
         """Return the margin of one D-dimensional instance."""
+        self._check_fitted()
         return self._margin_one(inst)
 
     def predict_one(self, inst):
@@ -218,6 +245,7 @@ class SVM:
 
     def margins(self, data):
         """Return a list of margins for an N x D list of instances."""
+        self._check_fitted()
         return [self._margin_one(inst) for inst in data]
 
     def _kernel_result(self, i, j):
@@ -231,6 +259,7 @@ class SVM:
 
     def to_dict(self):
         """Return a JSON-compatible dict for the trained SVM."""
+        self._check_fitted()
 
         if self.kernel_type == "custom":
             raise TypeError("custom kernels cannot be serialized")
@@ -273,6 +302,7 @@ class SVM:
                 f"unrecognized kernel type: {svm.kernel_type!r}"
             )
 
+        svm._fitted = True
         return svm
 
 

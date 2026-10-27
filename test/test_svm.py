@@ -83,6 +83,54 @@ class SVMPortTest(unittest.TestCase):
 
         self.assertEqual(svm2.data[0][0], original)
 
+    def test_untrained_raises(self):
+        svm = svmpy.SVM()
+
+        with self.assertRaises(svmpy.NotFittedError):
+            svm.predict(XOR_DATA)
+        with self.assertRaises(svmpy.NotFittedError):
+            svm.margin_one(XOR_DATA[0])
+        with self.assertRaises(svmpy.NotFittedError):
+            svm.to_dict()
+
+    def test_input_validation(self):
+        svm = svmpy.SVM()
+
+        with self.assertRaises(ValueError):
+            svm.train([], [])
+
+        with self.assertRaises(ValueError):
+            svm.train(XOR_DATA, XOR_LABELS[:-1])
+
+        with self.assertRaises(ValueError):
+            svm.train([[0, 0]], [-1])
+
+        with self.assertRaises(ValueError):
+            svm.train(XOR_DATA, XOR_LABELS, C=0)
+
+    def test_invalid_options_are_rejected(self):
+        svm = svmpy.SVM()
+
+        with self.assertRaises(ValueError):
+            svm.train(XOR_DATA, XOR_LABELS, kernel="poly")
+
+        with self.assertRaises(ValueError):
+            svm.train(XOR_DATA, XOR_LABELS, kernel="rbf", rbfsigma=0)
+
+        with self.assertRaises(TypeError):
+            svm.train(XOR_DATA, XOR_LABELS, Kernel="rbf")
+
+    def test_zero_alphatol_is_not_replaced_by_default(self):
+        svm = svmpy.SVM()
+        svm.train(
+            XOR_DATA,
+            XOR_LABELS,
+            kernel="rbf",
+            rbfsigma=0.5,
+            alphatol=0,
+        )
+        self.assertEqual(svm.predict(XOR_DATA), XOR_LABELS)
+
     def test_custom_kernel_cannot_be_serialized(self):
         svm = svmpy.SVM()
         svm.train(
