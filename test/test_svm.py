@@ -31,6 +31,14 @@ class SVMPortTest(unittest.TestCase):
         self.assertEqual(svm.n_features, 2)
         self.assertIsNone(svm.w)
 
+    def test_linear_kernel(self):
+        svm = svmpy.SVM()
+        svm.train(LINEAR_DATA, LINEAR_LABELS, kernel="linear", C=1.0)
+
+        self.assertIsNotNone(svm.w)
+        self.assertEqual(len(svm.w), 2)
+        self.assertEqual(svm.predict([[0.5, 0.5], [2.5, 2.5]]), [-1, 1])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -162,12 +162,22 @@ class SVM:
             else:
                 passes = 0
 
+        # For the linear kernel, store w so prediction is just w · x + b.
+        if self.kernel_type == "linear":
+            self.w = [
+                sum(a * y * x[j] for a, y, x in zip(self.alpha, labels, data))
+                for j in range(self.n_features)
+            ]
+
         return {"iters": iters}
 
     def _margin_one(self, inst):
         f = self.b
-        f += sum(a * y * self.kernel(inst, sv)
-                 for a, y, sv in zip(self.alpha, self.labels, self.data))
+        if self.w is not None:
+            f += sum(x * w for x, w in zip(inst, self.w))
+        else:
+            f += sum(a * y * self.kernel(inst, sv)
+                     for a, y, sv in zip(self.alpha, self.labels, self.data))
         return f
 
     def margin_one(self, inst):
