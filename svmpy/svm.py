@@ -168,6 +168,22 @@ class SVM:
                 sum(a * y * x[j] for a, y, x in zip(self.alpha, labels, data))
                 for j in range(self.n_features)
             ]
+        else:
+            # Keep only support vectors.  Copy each vector so later mutation
+            # of the caller's training data cannot change this model.
+            support_data = []
+            support_labels = []
+            support_alpha = []
+            for x, y, a in zip(self.data, self.labels, self.alpha):
+                if a > alphatol:
+                    support_data.append(list(x))
+                    support_labels.append(y)
+                    support_alpha.append(a)
+
+            self.data = support_data
+            self.labels = support_labels
+            self.alpha = support_alpha
+            self.n_samples = len(self.data)
 
         return {"iters": iters}
 
