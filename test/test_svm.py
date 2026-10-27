@@ -62,6 +62,27 @@ class SVMPortTest(unittest.TestCase):
         self.assertEqual(svm2.w, svm.w)
         self.assertEqual(svm2.b, svm.b)
 
+    def test_payload_is_isolated_from_model(self):
+        svm = svmpy.SVM()
+        svm.train(XOR_DATA, XOR_LABELS, kernel="rbf", rbfsigma=0.5)
+
+        payload = svm.to_dict()
+        original = svm.data[0][0]
+        payload["data"][0][0] = 999.0
+
+        self.assertEqual(svm.data[0][0], original)
+
+    def test_from_dict_is_isolated_from_payload(self):
+        svm = svmpy.SVM()
+        svm.train(XOR_DATA, XOR_LABELS, kernel="rbf", rbfsigma=0.5)
+
+        payload = svm.to_dict()
+        svm2 = svmpy.SVM.from_dict(payload)
+        original = svm2.data[0][0]
+        payload["data"][0][0] = 999.0
+
+        self.assertEqual(svm2.data[0][0], original)
+
     def test_custom_kernel_cannot_be_serialized(self):
         svm = svmpy.SVM()
         svm.train(

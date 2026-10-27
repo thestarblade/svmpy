@@ -242,12 +242,12 @@ class SVM:
             "kernelType": self.kernel_type,
         }
         if self.kernel_type == "linear":
-            payload["w"] = self.w
+            payload["w"] = list(self.w)
         elif self.kernel_type == "rbf":
             payload["rbfSigma"] = self.rbf_sigma
-            payload["data"] = self.data
-            payload["labels"] = self.labels
-            payload["alpha"] = self.alpha
+            payload["data"] = [list(x) for x in self.data]
+            payload["labels"] = list(self.labels)
+            payload["alpha"] = list(self.alpha)
         return payload
 
     @classmethod
@@ -260,14 +260,14 @@ class SVM:
         svm.kernel_type = payload["kernelType"]
 
         if svm.kernel_type == "linear":
-            svm.w = payload["w"]
+            svm.w = list(payload["w"])
             svm.kernel = linear_kernel
         elif svm.kernel_type == "rbf":
             svm.rbf_sigma = payload["rbfSigma"]
             svm.kernel = make_rbf_kernel(svm.rbf_sigma)
-            svm.data = payload["data"]
-            svm.labels = payload["labels"]
-            svm.alpha = payload["alpha"]
+            svm.data = [list(x) for x in payload["data"]]
+            svm.labels = list(payload["labels"])
+            svm.alpha = list(payload["alpha"])
         else:
             raise ValueError(
                 f"unrecognized kernel type: {svm.kernel_type!r}"
