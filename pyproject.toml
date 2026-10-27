@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "svmpy"
+version = "0.1.0"
+description = "A lightweight binary Support Vector Machine trained with SMO (Python port of svmjs)"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Andrej Karpathy", email = "andrej.karpathy@gmail.com" },
+]
+requires-python = ">=3.8"
+keywords = ["support vector machines", "machine learning", "classifier", "svm"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+]
+
+[tool.setuptools]
+packages = ["svmpy"]
