@@ -60,12 +60,13 @@ class SVM:
         self.labels = []
         self.kernel = linear_kernel
         self.kernel_type = "linear"
+        self.kernel_results = None
         self.w = None
         self.rbf_sigma = None
 
     def train(self, data, labels, *, C=1.0, tol=1e-4, alphatol=1e-7,
               maxiter=10000, numpasses=10, kernel="linear",
-              rbfsigma=0.5):
+              rbfsigma=0.5, memoize=False):
         """Train the SVM.
 
         ``data`` is an N x D list of floats, ``labels`` contains 1 or -1.
@@ -92,6 +93,15 @@ class SVM:
         self.alpha = [0.0] * self.n_samples
         self.b = 0.0
         self.w = None
+
+        # Cache kernel computations to avoid expensive recomputation.
+        # This could use too much memory if N is large.
+        self.kernel_results = None
+        if memoize:
+            self.kernel_results = [
+                [self.kernel(xi, xj) for xj in data]
+                for xi in data
+            ]
 
         # run SMO algorithm
         iters = 0
@@ -185,6 +195,9 @@ class SVM:
             self.alpha = support_alpha
             self.n_samples = len(self.data)
 
+        # The cache is only needed during training, and it is stale after the
+        # support vectors have been filtered.
+        self.kernel_results = None
         return {"iters": iters}
 
     def _margin_one(self, inst):
@@ -208,11 +221,59 @@ class SVM:
         return [self._margin_one(inst) for inst in data]
 
     def _kernel_result(self, i, j):
+        if self.kernel_results is not None:
+            return self.kernel_results[i][j]
         return self.kernel(self.data[i], self.data[j])
 
     def predict(self, data):
         """Return a list of 1 or -1 predictions for an N x D list."""
         return [1 if m > 0 else -1 for m in self.margins(data)]
+
+    def to_dict(self):
+        """Return a JSON-compatible dict for the trained SVM."""
+
+        if self.kernel_type == "custom":
+            raise TypeError("custom kernels cannot be serialized")
+
+        payload = {
+            "N": self.n_samples,
+            "D": self.n_features,
+            "b": self.b,
+            "kernelType": self.kernel_type,
+        }
+        if self.kernel_type == "linear":
+            payload["w"] = self.w
+        elif self.kernel_type == "rbf":
+            payload["rbfSigma"] = self.rbf_sigma
+            payload["data"] = self.data
+            payload["labels"] = self.labels
+            payload["alpha"] = self.alpha
+        return payload
+
+    @classmethod
+    def from_dict(cls, payload):
+        """Create an SVM from a dict produced by ``to_dict``."""
+        svm = cls()
+        svm.n_samples = payload["N"]
+        svm.n_features = payload["D"]
+        svm.b = payload["b"]
+        svm.kernel_type = payload["kernelType"]
+
+        if svm.kernel_type == "linear":
+            svm.w = payload["w"]
+            svm.kernel = linear_kernel
+        elif svm.kernel_type == "rbf":
+            svm.rbf_sigma = payload["rbfSigma"]
+            svm.kernel = make_rbf_kernel(svm.rbf_sigma)
+            svm.data = payload["data"]
+            svm.labels = payload["labels"]
+            svm.alpha = payload["alpha"]
+        else:
+            raise ValueError(
+                f"unrecognized kernel type: {svm.kernel_type!r}"
+            )
+
+        return svm
 
 
 # Kernels

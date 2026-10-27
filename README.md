@@ -19,4 +19,17 @@ svm.margins(data)        # raw decision values
 svm.margin_one(data[0])  # single margin
 ```
 
+## Save / load
+
+```python
+import json
+from svmpy import SVM
+
+payload = svm.to_dict()
+svm2 = SVM.from_dict(payload)
+svm3 = SVM.from_dict(json.loads(json.dumps(payload)))
+```
+
+Field names match svmjs. Custom kernels cannot be serialized.
+
 MIT License. Original implementation (c) 2012 Andrej Karpathy.
