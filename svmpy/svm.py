@@ -55,7 +55,14 @@ class NotFittedError(RuntimeError):
 class SVM:
     """Binary support vector machine trained with simplified SMO."""
 
-    def __init__(self):
+    def __init__(self, rng=None):
+        """Create an untrained SVM.
+
+        ``rng`` may be a ``random.Random`` instance (or any object providing
+        ``randrange``) for reproducible training.  Defaults to the ``random``
+        module.
+        """
+        self.rng = rng if rng is not None else random
         self._fitted = False
         self.n_samples = 0
         self.n_features = 0
@@ -139,7 +146,7 @@ class SVM:
                         or (yi * Ei > tol and self.alpha[i] > 0)):
 
                     # alpha_i needs updating! Pick a j != i uniformly.
-                    j = random.randrange(self.n_samples - 1)
+                    j = self.rng.randrange(self.n_samples - 1)
                     if j >= i:
                         j += 1
 
@@ -280,9 +287,9 @@ class SVM:
         return payload
 
     @classmethod
-    def from_dict(cls, payload):
+    def from_dict(cls, payload, rng=None):
         """Create an SVM from a dict produced by ``to_dict``."""
-        svm = cls()
+        svm = cls(rng=rng)
         svm.n_samples = payload["N"]
         svm.n_features = payload["D"]
         svm.b = payload["b"]

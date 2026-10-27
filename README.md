@@ -19,6 +19,8 @@ svm.margins(data)        # raw decision values
 svm.margin_one(data[0])  # single margin
 ```
 
+Use `SVM(rng=random.Random(42))` for reproducible training.
+
 ## Save / load
 
 ```python

@@ -8,6 +8,7 @@ Run from the svmpy directory with::
 """
 
 import json
+import random
 import unittest
 
 import svmpy
@@ -148,6 +149,17 @@ class SVMPortTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             svmpy.SVM.from_dict(payload)
+
+    def test_reproducible_with_seeded_rng(self):
+        svm1 = svmpy.SVM(rng=random.Random(42))
+        svm2 = svmpy.SVM(rng=random.Random(42))
+
+        svm1.train(XOR_DATA, XOR_LABELS, kernel="rbf", rbfsigma=0.5)
+        svm2.train(XOR_DATA, XOR_LABELS, kernel="rbf", rbfsigma=0.5)
+
+        self.assertEqual(svm1.alpha, svm2.alpha)
+        self.assertEqual(svm1.margins(XOR_DATA), svm2.margins(XOR_DATA))
+        self.assertEqual(svm1.predict(XOR_DATA), svm2.predict(XOR_DATA))
 
 
 if __name__ == "__main__":
